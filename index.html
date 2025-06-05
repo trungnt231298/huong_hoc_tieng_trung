@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trò chơi đoán từ vựng</title>
+    <style>
+        :root {
+            --primary-color: #74b9ff;
+            --secondary-color: #ff7675;
+            --background-color: #f5f7fa;
+            --text-color: #2d3436;
+            --card-color: #ffffff;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: var(--background-color);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .tab-btn {
+            padding: 12px 25px;
+            margin: 0 5px;
+            background: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .tab-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .tab-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            background: var(--card-color);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Vocabulary Tab Styles */
+        .vocab-list-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .vocab-list-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .vocab-list {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .vocab-list h2 {
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 15px;
+            border: 2px solid var(--primary-color);
+            border-radius: 10px;
+            font-size: 16px;
+            resize: vertical;
+            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            transition: all 0.3s ease;
+        }
+
+        textarea:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(116, 185, 255, 0.3);
+        }
+
+        .vocab-controls {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 16px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            min-width: 120px;
+        }
+
+        button:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        button.secondary {
+            background-color: #636e72;
+        }
+
+        button.success {
+            background-color: #00b894;
+        }
+
+        button.danger {
+            background-color: #d63031;
+        }
+
+        /* Game Tab Styles */
+        .game-area {
+            text-align: center;
+        }
+
+        .question {
+            font-size: 24px;
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #ffeaa7;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .answer-input {
+            width: 80%;
+            padding: 15px;
+            font-size: 18px;
+            border: 2px solid #55efc4;
+            border-radius: 8px;
+            margin: 15px 0;
+            max-width: 500px;
+            background: rgba(255, 255, 255, 0.9);
+            transition: all 0.3s ease;
+        }
+
+        .answer-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(85, 239, 196, 0.3);
+        }
+
+        .feedback {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 15px 0;
+            min-height: 30px;
+        }
+
+        .correct {
+            color: #00b894;
+            animation: bounce 0.5s;
+        }
+
+        .incorrect {
+            color: #d63031;
+        }
+
+        .score-container {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .score-box {
+            background: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin: 10px;
+            min-width: 120px;
+        }
+
+        /* Results Section */
+        .results-container {
+            margin-top: 30px;
+            text-align: left;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .results-table th, .results-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .results-table th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .results-table tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .results-actions {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        /* Settings Tab Styles */
+        .settings-options {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .setting-group {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .setting-title {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 5px;
+        }
+
+        .theme-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .theme-option {
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .theme-option:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .theme-option.active {
+            border: 2px solid var(--primary-color);
+            background: rgba(116, 185, 255, 0.1);
+        }
+
+        .theme-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .theme-colors {
+            display: flex;
+            margin-top: 10px;
+        }
+
+        .theme-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin-right: 5px;
+            border: 1px solid #ddd;
+        }
+
+        /* Music player */
+        .music-player {
+            margin-top: 20px;
+        }
+
+        .music-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .music-info {
+            flex: 1;
+            text-align: left;
+        }
+
+        /* Animations */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+                align-items: center;
+            }
+            .tab-btn {
+                margin: 5px 0;
+                width: 80%;
+            }
+            .settings-options {
+                flex-direction: column;
+            }
+            .theme-options {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <audio id="backgroundMusic" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="container">
+        <header>
+            <h1>🎮 Trò Chơi Đoán Từ Vựng 🎮</h1>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="vocabulary">📚 Từ đã học</button>
+            <button class="tab-btn" data-tab="game">🧠 Siêu trí nhớ</button>
+            <button class="tab-btn" data-tab="settings">⚙️ Cài đặt</button>
+        </div>
+
+        <!-- Vocabulary Tab -->
+        <div id="vocabulary" class="tab-content active">
+            <div class="vocab-list-container">
+                <div class="vocab-list">
+                    <h2>Danh sách từ vựng của bạn</h2>
+                    <p>Nhập theo định dạng: từ|nghĩa (mỗi cặp từ-nghĩa trên 1 dòng)</p>
+                    <textarea id="vocabInput" placeholder="Ví dụ:
+hello|xin chào
+goodbye|tạm biệt
+apple|quả táo"></textarea>
+                    <div class="vocab-controls">
+                        <button id="loadVocab" class="secondary">📥 Tải từ vựng</button>
+                        <button id="saveVocab" class="success">💾 Lưu từ vựng</button>
+                        <button id="clearVocab" class="danger">🗑️ Xóa tất cả</button>
+                    </div>
+                </div>
+                <div class="vocab-list">
+                    <h2>Thêm từ mới</h2>
+                    <div style="margin-bottom: 15px;">
+                        <input type="text" id="newWord" placeholder="Từ mới" style="width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 2px solid var(--primary-color);">
+                        <input type="text" id="newMeaning" placeholder="Nghĩa" style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--primary-color);">
+                    </div>
+                    <button id="addWord" style="width: 100%;">➕ Thêm từ</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Tab -->
+        <div id="game" class="tab-content">
+            <div class="game-area">
+                <div class="score-container">
+                    <div class="score-box">⭐ Điểm: <span id="score">0</span></div>
+                    <div class="score-box">📖 Đã dùng: <span id="usedWords">0</span>/<span id="totalWords">0</span></div>
+                    <div class="score-box">🎯 Tỉ lệ đúng: <span id="accuracy">0</span>%</div>
+                </div>
+                
+                <div class="question" id="question">Nhấn "Bắt đầu" để bắt đầu trò chơi!</div>
+                <input type="text" id="userAnswer" class="answer-input" placeholder="Nhập từ vựng..." disabled>
+                <div class="feedback" id="feedback"></div>
+                
+                <div style="margin-top: 20px;">
+                    <button id="startGame">🎮 Bắt đầu trò chơi</button>
+                    <button id="submitAnswer" style="display: none;">🔍 Kiểm tra</button>
+                    <button id="nextQuestion" style="display: none;">➡️ Câu tiếp theo</button>
+                </div>
+                
+                <!-- Results Section (hidden by default) -->
+                <div id="resultsSection" class="results-container" style="display: none;">
+                    <h2>Kết quả học tập</h2>
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Từ vựng</th>
+                                <th>Nghĩa</th>
+                                <th>Số lần sai</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody">
+                            <!-- Results will be inserted here by JavaScript -->
+                        </tbody>
+                    </table>
+                    
+                    <div class="results-actions">
+                        <button id="retryWrongWords" class="danger">🔄 Chơi lại từ sai</button>
+                        <button id="restartGame" class="success">🔄 Chơi lại từ đầu</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <div class="settings-options">
+                <div class="setting-group">
+                    <div class="setting-title">🎨 Giao diện</div>
+                    <div class="theme-options">
+                        <div class="theme-option active" data-theme="default">
+                            <div class="theme-name">Mặc định</div>
+                            <div class="theme-colors">
+                                <div class="theme-color" style="background-color: #74b9ff;"></div>
+                                <div class="theme-color" style="background-color: #ff7675;"></div>
+                                <div class="theme-color" style="background-color: #f5f7fa;"></div>
+                            </div>
+                        </div>
+                        <div class="theme-option" data-theme="sakura">
+                            <div class="theme-name">Hoa anh đào</div>
+                            <div class="theme-colors">
+                                <div class="theme-color" style="background-color: #ff9ff3;"></div>
+                                <div class="theme-color" style="background-color: #f368e0;"></div>
+                                <div class="theme-color" style="background-color: #fff;"></div>
+                            </div>
+                        </div>
+                        <div class="theme-option" data-theme="ocean">
+                            <div class="theme-name">Đại dương</div>
+                            <div class="theme-colors">
+                                <div class="theme-color" style="background-color: #1dd1a1;"></div>
+                                <div class="theme-color" style="background-color: #10ac84;"></div>
+                                <div class="theme-color" style="background-color: #c8d6e5;"></div>
+                            </div>
+                        </div>
+                        <div class="theme-option" data-theme="forest">
+                            <div class="theme-name">Rừng xanh</div>
+                            <div class="theme-colors">
+                                <div class="theme-color" style="background-color: #2ecc71;"></div>
+                                <div class="theme-color" style="background-color: #27ae60;"></div>
+                                <div class="theme-color" style="background-color: #dfe6e9;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="setting-group">
+                    <div class="setting-title">🎵 Âm thanh</div>
+                    <div class="music-player">
+                        <div>Nhạc nền: Dòng Sông Trôi (Nhạc Trung Quốc)</div>
+                        <div class="music-controls">
+                            <button id="playMusic">▶️ Phát nhạc</button>
+                            <button id="pauseMusic">⏸️ Tạm dừng</button>
+                            <div class="music-info">
+                                <input type="range" id="volumeControl" min="0" max="1" step="0.1" value="0.5">
+                                <div>🔊 Âm lượng: <span id="volumeValue">50</span>%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Biến toàn cục
+        let vocabList = [];
+        let currentQuestion = {};
+        let score = 0;
+        let totalQuestions = 0;
+        let usedWords = [];
+        let wrongAnswers = {}; // Lưu trữ số lần sai cho mỗi từ
+        const STORAGE_KEY = 'vocabularyGameWords';
+        
+        // DOM elements
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const vocabInput = document.getElementById('vocabInput');
+        const startGameBtn = document.getElementById('startGame');
+        const questionEl = document.getElementById('question');
+        const userAnswer = document.getElementById('userAnswer');
+        const submitAnswerBtn = document.getElementById('submitAnswer');
+        const feedbackEl = document.getElementById('feedback');
+        const nextQuestionBtn = document.getElementById('nextQuestion');
+        const scoreEl = document.getElementById('score');
+        const usedWordsEl = document.getElementById('usedWords');
+        const totalWordsEl = document.getElementById('totalWords');
+        const accuracyEl = document.getElementById('accuracy');
+        const saveVocabBtn = document.getElementById('saveVocab');
+        const loadVocabBtn = document.getElementById('loadVocab');
+        const clearVocabBtn = document.getElementById('clearVocab');
+        const addWordBtn = document.getElementById('addWord');
+        const newWordInput = document.getElementById('newWord');
+        const newMeaningInput = document.getElementById('newMeaning');
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        const playMusicBtn = document.getElementById('playMusic');
+        const pauseMusicBtn = document.getElementById('pauseMusic');
+        const volumeControl = document.getElementById('volumeControl');
+        const volumeValue = document.getElementById('volumeValue');
+        const themeOptions = document.querySelectorAll('.theme-option');
+        const resultsSection = document.getElementById('resultsSection');
+        const resultsTableBody = document.getElementById('resultsTableBody');
+        const retryWrongWordsBtn = document.getElementById('retryWrongWords');
+        const restartGameBtn = document.getElementById('restartGame');
+        
+        // Tab switching
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabId = btn.getAttribute('data-tab');
+                
+                // Update active tab button
+                tabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Update active tab content
+                tabContents.forEach(content => content.classList.remove('active'));
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+        
+        // Theme switching
+        themeOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const theme = option.getAttribute('data-theme');
+                
+                // Update active theme
+                themeOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+                
+                // Update theme variables
+                updateTheme(theme);
+            });
+        });
+        
+        function updateTheme(theme) {
+            const root = document.documentElement;
+            
+            switch(theme) {
+                case 'default':
+                    root.style.setProperty('--primary-color', '#74b9ff');
+                    root.style.setProperty('--secondary-color', '#ff7675');
+                    root.style.setProperty('--background-color', '#f5f7fa');
+                    root.style.setProperty('--text-color', '#2d3436');
+                    root.style.setProperty('--card-color', '#ffffff');
+                    break;
+                
+                case 'sakura':
+                    root.style.setProperty('--primary-color', '#ff9ff3');
+                    root.style.setProperty('--secondary-color', '#f368e0');
+                    root.style.setProperty('--background-color', '#fff');
+                    root.style.setProperty('--text-color', '#2d3436');
+                    root.style.setProperty('--card-color', '#ffffff');
+                    break;
+                
+                case 'ocean':
+                    root.style.setProperty('--primary-color', '#1dd1a1');
+                    root.style.setProperty('--secondary-color', '#10ac84');
+                    root.style.setProperty('--background-color', '#c8d6e5');
+                    root.style.setProperty('--text-color', '#222f3e');
+                    root.style.setProperty('--card-color', '#ffffff');
+                    break;
+                
+                case 'forest':
+                    root.style.setProperty('--primary-color', '#2ecc71');
+                    root.style.setProperty('--secondary-color', '#27ae60');
+                    root.style.setProperty('--background-color', '#dfe6e9');
+                    root.style.setProperty('--text-color', '#2d3436');
+                    root.style.setProperty('--card-color', '#ffffff');
+                    break;
+            }
+        }
+        
+        // Music controls
+        playMusicBtn.addEventListener('click', () => {
+            backgroundMusic.play();
+        });
+        
+        pauseMusicBtn.addEventListener('click', () => {
+            backgroundMusic.pause();
+        });
+        
+        volumeControl.addEventListener('input', () => {
+            backgroundMusic.volume = volumeControl.value;
+            volumeValue.textContent = Math.round(volumeControl.value * 100);
+        });
+        
+        // Khởi tạo
+        document.addEventListener('DOMContentLoaded', () => {
+            // Thử tải từ vựng đã lưu khi trang được tải
+            const savedVocab = localStorage.getItem(STORAGE_KEY);
+            if (savedVocab) {
+                vocabInput.value = savedVocab;
+            }
+            
+            // Khởi tạo âm lượng
+            backgroundMusic.volume = 0.5;
+        });
+        
+        // Lưu từ vựng
+        saveVocabBtn.addEventListener('click', () => {
+            const vocabText = vocabInput.value.trim();
+            if (vocabText) {
+                localStorage.setItem(STORAGE_KEY, vocabText);
+                alert('Đã lưu từ vựng thành công!');
+            } else {
+                alert('Không có từ vựng để lưu!');
+            }
+        });
+        
+        // Tải từ vựng đã lưu
+        loadVocabBtn.addEventListener('click', () => {
+            const savedVocab = localStorage.getItem(STORAGE_KEY);
+            if (savedVocab) {
+                vocabInput.value = savedVocab;
+                alert('Đã tải từ vựng đã lưu!');
+            } else {
+                alert('Không tìm thấy từ vựng đã lưu!');
+            }
+        });
+        
+        // Xóa từ vựng
+        clearVocabBtn.addEventListener('click', () => {
+            if (confirm('Bạn có chắc chắn muốn xóa tất cả từ vựng?')) {
+                vocabInput.value = '';
+                localStorage.removeItem(STORAGE_KEY);
+            }
+        });
+        
+        // Thêm từ mới
+        addWordBtn.addEventListener('click', () => {
+            const word = newWordInput.value.trim();
+            const meaning = newMeaningInput.value.trim();
+            
+            if (word && meaning) {
+                // Thêm vào textarea
+                if (vocabInput.value.trim() !== '') {
+                    vocabInput.value += `\n${word}|${meaning}`;
+                } else {
+                    vocabInput.value = `${word}|${meaning}`;
+                }
+                
+                // Xóa nội dung input
+                newWordInput.value = '';
+                newMeaningInput.value = '';
+                
+                // Focus lại ô từ mới
+                newWordInput.focus();
+            } else {
+                alert('Vui lòng nhập cả từ và nghĩa!');
+            }
+        });
+        
+        // Bắt đầu trò chơi
+        startGameBtn.addEventListener('click', () => {
+            const inputText = vocabInput.value.trim();
+            if (!inputText) {
+                alert('Vui lòng nhập danh sách từ vựng!');
+                return;
+            }
+            
+            // Xử lý dữ liệu đầu vào
+            vocabList = inputText.split('\n')
+                .map(line => line.trim())
+                .filter(line => line)
+                .map(line => {
+                    const parts = line.split('|');
+                    if (parts.length < 2) return null;
+                    const word = parts[0].trim();
+                    const meaning = parts.slice(1).join('|').trim();
+                    return { word, meaning };
+                })
+                .filter(item => item !== null);
+            
+            if (vocabList.length === 0) {
+                alert('Không có từ vựng hợp lệ. Vui lòng kiểm tra lại định dạng!\nVí dụ: hello|xin chào');
+                return;
+            }
+            
+            // Reset các biến trò chơi
+            score = 0;
+            totalQuestions = 0;
+            usedWords = [];
+            wrongAnswers = {};
+            
+            // Ẩn kết quả nếu có
+            resultsSection.style.display = 'none';
+            
+            // Hiển thị thông tin ban đầu
+            updateScore();
+            nextQuestion();
+            
+            // Cập nhật giao diện
+            startGameBtn.style.display = 'none';
+            submitAnswerBtn.style.display = 'inline-block';
+            userAnswer.disabled = false;
+            userAnswer.focus();
+        });
+        
+        // Hiển thị câu hỏi mới
+        function nextQuestion() {
+            // Lọc ra những từ chưa được sử dụng
+            const availableWords = vocabList.filter(item => !usedWords.includes(item.word));
+            
+            if (availableWords.length === 0) {
+                // Nếu đã dùng hết tất cả các từ
+                showResults();
+                return;
+            }
+            
+            // Chọn ngẫu nhiên một từ trong danh sách chưa dùng
+            const randomIndex = Math.floor(Math.random() * availableWords.length);
+            currentQuestion = availableWords[randomIndex];
+            
+            // Thêm từ vào danh sách đã dùng
+            usedWords.push(currentQuestion.word);
+            
+            // Khởi tạo số lần sai nếu chưa có
+            if (!wrongAnswers[currentQuestion.word]) {
+                wrongAnswers[currentQuestion.word] = 0;
+            }
+            
+            // Hiển thị nghĩa của từ
+            questionEl.textContent = `"${currentQuestion.meaning}" có nghĩa là từ nào?`;
+            
+            // Reset giao diện
+            userAnswer.value = '';
+            feedbackEl.textContent = '';
+            feedbackEl.className = 'feedback';
+            userAnswer.disabled = false;
+            submitAnswerBtn.style.display = 'inline-block';
+            nextQuestionBtn.style.display = 'none';
+            userAnswer.style.display = 'inline-block';
+            
+            // Cập nhật số từ đã dùng
+            usedWordsEl.textContent = usedWords.length;
+            totalWordsEl.textContent = vocabList.length;
+            
+            // Focus vào ô nhập
+            userAnswer.focus();
+        }
+        
+        // Hiển thị kết quả
+        function showResults() {
+            questionEl.textContent = 'Chúc mừng! Bạn đã hoàn thành tất cả các từ!';
+            userAnswer.style.display = 'none';
+            submitAnswerBtn.style.display = 'none';
+            nextQuestionBtn.style.display = 'none';
+            
+            // Hiển thị bảng kết quả
+            resultsTableBody.innerHTML = '';
+            
+            vocabList.forEach(item => {
+                const row = document.createElement('tr');
+                
+                const wordCell = document.createElement('td');
+                wordCell.textContent = item.word;
+                row.appendChild(wordCell);
+                
+                const meaningCell = document.createElement('td');
+                meaningCell.textContent = item.meaning;
+                row.appendChild(meaningCell);
+                
+                const wrongCell = document.createElement('td');
+                wrongCell.textContent = wrongAnswers[item.word] || 0;
+                row.appendChild(wrongCell);
+                
+                resultsTableBody.appendChild(row);
+            });
+            
+            resultsSection.style.display = 'block';
+            startGameBtn.style.display = 'inline-block';
+            startGameBtn.textContent = '🔄 Chơi lại';
+        }
+        
+        // Kiểm tra câu trả lời
+        submitAnswerBtn.addEventListener('click', checkAnswer);
+        userAnswer.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkAnswer();
+        });
+        
+        function checkAnswer() {
+            const answer = userAnswer.value.trim().toLowerCase();
+            const correctAnswer = currentQuestion.word.toLowerCase();
+            totalQuestions++;
+            
+            if (answer === correctAnswer) {
+                // Câu trả lời đúng
+                feedbackEl.textContent = 'Bạn thật tuyệt! 🎉';
+                feedbackEl.className = 'feedback correct';
+                score++;
+                updateScore();
+            } else {
+                // Câu trả lời sai
+                feedbackEl.textContent = 'Hãy suy nghĩ thêm... 💭';
+                feedbackEl.className = 'feedback incorrect';
+                wrongAnswers[currentQuestion.word]++;
+                // Cho phép người dùng thử lại
+                return;
+            }
+            
+            // Sau khi trả lời đúng
+            userAnswer.disabled = true;
+            submitAnswerBtn.style.display = 'none';
+            nextQuestionBtn.style.display = 'inline-block';
+        }
+        
+        // Câu hỏi tiếp theo
+        nextQuestionBtn.addEventListener('click', nextQuestion);
+        
+        // Cập nhật điểm
+        function updateScore() {
+            scoreEl.textContent = score;
+            const accuracy = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
+            accuracyEl.textContent = accuracy;
+        }
+        
+        // Chơi lại với các từ sai
+        retryWrongWordsBtn.addEventListener('click', () => {
+            // Lọc ra các từ có số lần sai > 0
+            const wordsToRetry = vocabList.filter(item => wrongAnswers[item.word] > 0);
+            
+            if (wordsToRetry.length === 0) {
+                alert('Không có từ nào trả lời sai!');
+                return;
+            }
+            
+            // Cập nhật danh sách từ vựng với các từ cần học lại
+            vocabList = wordsToRetry;
+            
+            // Reset các biến trò chơi
+            score = 0;
+            totalQuestions = 0;
+            usedWords = [];
+            wrongAnswers = {};
+            
+            // Ẩn kết quả
+            resultsSection.style.display = 'none';
+            
+            // Hiển thị thông tin ban đầu
+            updateScore();
+            nextQuestion();
+            
+            // Cập nhật giao diện
+            startGameBtn.style.display = 'none';
+            submitAnswerBtn.style.display = 'inline-block';
+            userAnswer.disabled = false;
+            userAnswer.focus();
+        });
+        
+        // Chơi lại từ đầu
+        restartGameBtn.addEventListener('click', () => {
+            // Reset các biến trò chơi
+            score = 0;
+            totalQuestions = 0;
+            usedWords = [];
+            wrongAnswers = {};
+            
+            // Ẩn kết quả
+            resultsSection.style.display = 'none';
+            
+            // Hiển thị thông tin ban đầu
+            updateScore();
+            nextQuestion();
+            
+            // Cập nhật giao diện
+            startGameBtn.style.display = 'none';
+            submitAnswerBtn.style.display = 'inline-block';
+            userAnswer.disabled = false;
+            userAnswer.focus();
+        });
+    </script>
+</body>
+</html>
