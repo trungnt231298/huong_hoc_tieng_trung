@@ -180,6 +180,41 @@
             background-color: #d63031;
         }
 
+        button.info {
+            background-color: #0984e3;
+        }
+
+        /* File Upload */
+        .file-upload {
+            margin-top: 20px;
+            padding: 15px;
+            border: 2px dashed var(--primary-color);
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .file-upload input {
+            display: none;
+        }
+
+        .file-upload label {
+            display: block;
+            padding: 10px;
+            cursor: pointer;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .file-upload label:hover {
+            color: var(--secondary-color);
+        }
+
+        .file-name {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #636e72;
+        }
+
         /* Game Tab Styles */
         .game-area {
             text-align: center;
@@ -392,9 +427,8 @@
     </style>
 </head>
 <body>
-    <audio id="backgroundMusic" loop>
-        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
-    </audio>
+    <!-- Nhúng nhạc từ YouTube -->
+    <iframe id="backgroundMusic" width="0" height="0" src="https://www.youtube.com/embed/9FHfEemC_-Q?enablejsapi=1" frameborder="0" allow="autoplay"></iframe>
 
     <div class="container">
         <header>
@@ -421,6 +455,15 @@ apple|quả táo"></textarea>
                         <button id="loadVocab" class="secondary">📥 Tải từ vựng</button>
                         <button id="saveVocab" class="success">💾 Lưu từ vựng</button>
                         <button id="clearVocab" class="danger">🗑️ Xóa tất cả</button>
+                    </div>
+                    
+                    <div class="file-upload">
+                        <h3>Update file từ vựng</h3>
+                        <p>Tải lên file text (.txt) chứa từ vựng theo định dạng: từ|nghĩa (mỗi dòng 1 cặp từ)</p>
+                        <input type="file" id="vocabFileInput" accept=".txt">
+                        <label for="vocabFileInput">📁 Chọn file</label>
+                        <div class="file-name" id="fileName">Chưa chọn file</div>
+                        <button id="updateVocab" class="info" style="margin-top: 10px;">🔄 Update từ vựng</button>
                     </div>
                 </div>
                 <div class="vocab-list">
@@ -449,6 +492,7 @@ apple|quả táo"></textarea>
                 
                 <div style="margin-top: 20px;">
                     <button id="startGame">🎮 Bắt đầu trò chơi</button>
+                    <button id="restartGame" class="success" style="display: none;">🔄 Bắt đầu lại</button>
                     <button id="submitAnswer" style="display: none;">🔍 Kiểm tra</button>
                     <button id="nextQuestion" style="display: none;">➡️ Câu tiếp theo</button>
                 </div>
@@ -471,7 +515,7 @@ apple|quả táo"></textarea>
                     
                     <div class="results-actions">
                         <button id="retryWrongWords" class="danger">🔄 Chơi lại từ sai</button>
-                        <button id="restartGame" class="success">🔄 Chơi lại từ đầu</button>
+                        <button id="restartGameFromResults" class="success">🔄 Chơi lại từ đầu</button>
                     </div>
                 </div>
             </div>
@@ -521,7 +565,7 @@ apple|quả táo"></textarea>
                 <div class="setting-group">
                     <div class="setting-title">🎵 Âm thanh</div>
                     <div class="music-player">
-                        <div>Nhạc nền: Dòng Sông Trôi (Nhạc Trung Quốc)</div>
+                        <div>Nhạc nền: Giây Tiếp Theo - Trương Bích Thần</div>
                         <div class="music-controls">
                             <button id="playMusic">▶️ Phát nhạc</button>
                             <button id="pauseMusic">⏸️ Tạm dừng</button>
@@ -543,8 +587,9 @@ apple|quả táo"></textarea>
         let score = 0;
         let totalQuestions = 0;
         let usedWords = [];
-        let wrongAnswers = {}; // Lưu trữ số lần sai cho mỗi từ
+        let wrongAnswers = {};
         const STORAGE_KEY = 'vocabularyGameWords';
+        let player;
         
         // DOM elements
         const tabBtns = document.querySelectorAll('.tab-btn');
@@ -576,17 +621,39 @@ apple|quả táo"></textarea>
         const resultsTableBody = document.getElementById('resultsTableBody');
         const retryWrongWordsBtn = document.getElementById('retryWrongWords');
         const restartGameBtn = document.getElementById('restartGame');
+        const restartGameFromResultsBtn = document.getElementById('restartGameFromResults');
+        const vocabFileInput = document.getElementById('vocabFileInput');
+        const fileNameEl = document.getElementById('fileName');
+        const updateVocabBtn = document.getElementById('updateVocab');
+        
+        // YouTube Player API
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('backgroundMusic', {
+                events: {
+                    'onReady': onPlayerReady
+                }
+            });
+        }
+        
+        function onPlayerReady(event) {
+            // Player đã sẵn sàng
+            updateVolume();
+        }
+        
+        function updateVolume() {
+            if (player && player.setVolume) {
+                player.setVolume(volumeControl.value * 100);
+            }
+        }
         
         // Tab switching
         tabBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 const tabId = btn.getAttribute('data-tab');
                 
-                // Update active tab button
                 tabBtns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 
-                // Update active tab content
                 tabContents.forEach(content => content.classList.remove('active'));
                 document.getElementById(tabId).classList.add('active');
             });
@@ -597,11 +664,9 @@ apple|quả táo"></textarea>
             option.addEventListener('click', () => {
                 const theme = option.getAttribute('data-theme');
                 
-                // Update active theme
                 themeOptions.forEach(opt => opt.classList.remove('active'));
                 option.classList.add('active');
                 
-                // Update theme variables
                 updateTheme(theme);
             });
         });
@@ -646,28 +711,127 @@ apple|quả táo"></textarea>
         
         // Music controls
         playMusicBtn.addEventListener('click', () => {
-            backgroundMusic.play();
+            if (player && player.playVideo) {
+                player.playVideo();
+            }
         });
         
         pauseMusicBtn.addEventListener('click', () => {
-            backgroundMusic.pause();
+            if (player && player.pauseVideo) {
+                player.pauseVideo();
+            }
         });
         
         volumeControl.addEventListener('input', () => {
-            backgroundMusic.volume = volumeControl.value;
             volumeValue.textContent = Math.round(volumeControl.value * 100);
+            updateVolume();
         });
+        
+        // File upload handling
+        vocabFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                fileNameEl.textContent = file.name;
+            } else {
+                fileNameEl.textContent = 'Chưa chọn file';
+            }
+        });
+        
+        // Update vocabulary from file
+        updateVocabBtn.addEventListener('click', () => {
+            const file = vocabFileInput.files[0];
+            if (!file) {
+                alert('Vui lòng chọn file trước khi update!');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const fileContent = e.target.result;
+                    const newVocab = processVocabFile(fileContent);
+                    
+                    if (newVocab.length === 0) {
+                        alert('Không tìm thấy từ vựng hợp lệ trong file!');
+                        return;
+                    }
+                    
+                    // Get current vocabulary
+                    let currentVocab = [];
+                    const currentText = vocabInput.value.trim();
+                    if (currentText) {
+                        currentVocab = currentText.split('\n')
+                            .map(line => line.trim())
+                            .filter(line => line);
+                    }
+                    
+                    // Create a Set of current words to check for duplicates
+                    const currentWords = new Set();
+                    currentVocab.forEach(line => {
+                        const parts = line.split('|');
+                        if (parts.length > 0) {
+                            currentWords.add(parts[0].trim().toLowerCase());
+                        }
+                    });
+                    
+                    // Add only new words that don't exist in current vocabulary
+                    let addedCount = 0;
+                    newVocab.forEach(item => {
+                        const wordLower = item.word.toLowerCase();
+                        if (!currentWords.has(wordLower)) {
+                            currentVocab.push(`${item.word}|${item.meaning}`);
+                            addedCount++;
+                        }
+                    });
+                    
+                    // Update the textarea
+                    vocabInput.value = currentVocab.join('\n');
+                    
+                    alert(`Đã thêm ${addedCount} từ mới từ file!\nTổng số từ hiện tại: ${currentVocab.length}`);
+                    
+                    // Reset file input
+                    vocabFileInput.value = '';
+                    fileNameEl.textContent = 'Chưa chọn file';
+                    
+                } catch (error) {
+                    console.error('Error processing file:', error);
+                    alert('Có lỗi xảy ra khi xử lý file! Vui lòng kiểm tra định dạng file.');
+                }
+            };
+            reader.readAsText(file);
+        });
+        
+        function processVocabFile(content) {
+            const lines = content.split('\n')
+                .map(line => line.trim())
+                .filter(line => line);
+            
+            const vocab = [];
+            
+            lines.forEach(line => {
+                const parts = line.split('|').map(part => part.trim());
+                if (parts.length >= 2) {
+                    const word = parts[0];
+                    const meaning = parts.slice(1).join('|');
+                    vocab.push({ word, meaning });
+                }
+            });
+            
+            return vocab;
+        }
         
         // Khởi tạo
         document.addEventListener('DOMContentLoaded', () => {
-            // Thử tải từ vựng đã lưu khi trang được tải
             const savedVocab = localStorage.getItem(STORAGE_KEY);
             if (savedVocab) {
                 vocabInput.value = savedVocab;
             }
             
-            // Khởi tạo âm lượng
-            backgroundMusic.volume = 0.5;
+            // Load YouTube API
+            const tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
         });
         
         // Lưu từ vựng
@@ -706,18 +870,14 @@ apple|quả táo"></textarea>
             const meaning = newMeaningInput.value.trim();
             
             if (word && meaning) {
-                // Thêm vào textarea
                 if (vocabInput.value.trim() !== '') {
                     vocabInput.value += `\n${word}|${meaning}`;
                 } else {
                     vocabInput.value = `${word}|${meaning}`;
                 }
                 
-                // Xóa nội dung input
                 newWordInput.value = '';
                 newMeaningInput.value = '';
-                
-                // Focus lại ô từ mới
                 newWordInput.focus();
             } else {
                 alert('Vui lòng nhập cả từ và nghĩa!');
@@ -725,14 +885,17 @@ apple|quả táo"></textarea>
         });
         
         // Bắt đầu trò chơi
-        startGameBtn.addEventListener('click', () => {
+        startGameBtn.addEventListener('click', startNewGame);
+        restartGameBtn.addEventListener('click', startNewGame);
+        restartGameFromResultsBtn.addEventListener('click', startNewGame);
+        
+        function startNewGame() {
             const inputText = vocabInput.value.trim();
             if (!inputText) {
                 alert('Vui lòng nhập danh sách từ vựng!');
                 return;
             }
             
-            // Xử lý dữ liệu đầu vào
             vocabList = inputText.split('\n')
                 .map(line => line.trim())
                 .filter(line => line)
@@ -750,53 +913,41 @@ apple|quả táo"></textarea>
                 return;
             }
             
-            // Reset các biến trò chơi
             score = 0;
             totalQuestions = 0;
             usedWords = [];
             wrongAnswers = {};
             
-            // Ẩn kết quả nếu có
             resultsSection.style.display = 'none';
             
-            // Hiển thị thông tin ban đầu
             updateScore();
             nextQuestion();
             
-            // Cập nhật giao diện
             startGameBtn.style.display = 'none';
+            restartGameBtn.style.display = 'inline-block';
             submitAnswerBtn.style.display = 'inline-block';
             userAnswer.disabled = false;
             userAnswer.focus();
-        });
+        }
         
         // Hiển thị câu hỏi mới
         function nextQuestion() {
-            // Lọc ra những từ chưa được sử dụng
             const availableWords = vocabList.filter(item => !usedWords.includes(item.word));
             
             if (availableWords.length === 0) {
-                // Nếu đã dùng hết tất cả các từ
                 showResults();
                 return;
             }
             
-            // Chọn ngẫu nhiên một từ trong danh sách chưa dùng
             const randomIndex = Math.floor(Math.random() * availableWords.length);
             currentQuestion = availableWords[randomIndex];
-            
-            // Thêm từ vào danh sách đã dùng
             usedWords.push(currentQuestion.word);
             
-            // Khởi tạo số lần sai nếu chưa có
             if (!wrongAnswers[currentQuestion.word]) {
                 wrongAnswers[currentQuestion.word] = 0;
             }
             
-            // Hiển thị nghĩa của từ
             questionEl.textContent = `"${currentQuestion.meaning}" có nghĩa là từ nào?`;
-            
-            // Reset giao diện
             userAnswer.value = '';
             feedbackEl.textContent = '';
             feedbackEl.className = 'feedback';
@@ -805,11 +956,9 @@ apple|quả táo"></textarea>
             nextQuestionBtn.style.display = 'none';
             userAnswer.style.display = 'inline-block';
             
-            // Cập nhật số từ đã dùng
             usedWordsEl.textContent = usedWords.length;
             totalWordsEl.textContent = vocabList.length;
             
-            // Focus vào ô nhập
             userAnswer.focus();
         }
         
@@ -819,8 +968,8 @@ apple|quả táo"></textarea>
             userAnswer.style.display = 'none';
             submitAnswerBtn.style.display = 'none';
             nextQuestionBtn.style.display = 'none';
+            restartGameBtn.style.display = 'none';
             
-            // Hiển thị bảng kết quả
             resultsTableBody.innerHTML = '';
             
             vocabList.forEach(item => {
@@ -858,28 +1007,21 @@ apple|quả táo"></textarea>
             totalQuestions++;
             
             if (answer === correctAnswer) {
-                // Câu trả lời đúng
                 feedbackEl.textContent = 'Bạn thật tuyệt! 🎉';
                 feedbackEl.className = 'feedback correct';
                 score++;
                 updateScore();
+                
+                // Tự động chuyển sang câu tiếp theo sau 1 giây
+                setTimeout(() => {
+                    nextQuestion();
+                }, 1000);
             } else {
-                // Câu trả lời sai
                 feedbackEl.textContent = 'Hãy suy nghĩ thêm... 💭';
                 feedbackEl.className = 'feedback incorrect';
                 wrongAnswers[currentQuestion.word]++;
-                // Cho phép người dùng thử lại
-                return;
             }
-            
-            // Sau khi trả lời đúng
-            userAnswer.disabled = true;
-            submitAnswerBtn.style.display = 'none';
-            nextQuestionBtn.style.display = 'inline-block';
         }
-        
-        // Câu hỏi tiếp theo
-        nextQuestionBtn.addEventListener('click', nextQuestion);
         
         // Cập nhật điểm
         function updateScore() {
@@ -890,7 +1032,6 @@ apple|quả táo"></textarea>
         
         // Chơi lại với các từ sai
         retryWrongWordsBtn.addEventListener('click', () => {
-            // Lọc ra các từ có số lần sai > 0
             const wordsToRetry = vocabList.filter(item => wrongAnswers[item.word] > 0);
             
             if (wordsToRetry.length === 0) {
@@ -898,46 +1039,18 @@ apple|quả táo"></textarea>
                 return;
             }
             
-            // Cập nhật danh sách từ vựng với các từ cần học lại
             vocabList = wordsToRetry;
-            
-            // Reset các biến trò chơi
             score = 0;
             totalQuestions = 0;
             usedWords = [];
             wrongAnswers = {};
             
-            // Ẩn kết quả
             resultsSection.style.display = 'none';
-            
-            // Hiển thị thông tin ban đầu
             updateScore();
             nextQuestion();
             
-            // Cập nhật giao diện
             startGameBtn.style.display = 'none';
-            submitAnswerBtn.style.display = 'inline-block';
-            userAnswer.disabled = false;
-            userAnswer.focus();
-        });
-        
-        // Chơi lại từ đầu
-        restartGameBtn.addEventListener('click', () => {
-            // Reset các biến trò chơi
-            score = 0;
-            totalQuestions = 0;
-            usedWords = [];
-            wrongAnswers = {};
-            
-            // Ẩn kết quả
-            resultsSection.style.display = 'none';
-            
-            // Hiển thị thông tin ban đầu
-            updateScore();
-            nextQuestion();
-            
-            // Cập nhật giao diện
-            startGameBtn.style.display = 'none';
+            restartGameBtn.style.display = 'inline-block';
             submitAnswerBtn.style.display = 'inline-block';
             userAnswer.disabled = false;
             userAnswer.focus();
